@@ -7,11 +7,23 @@ use diesel::pg::PgConnection;
 use dotenv::dotenv;
 use std::env;
 
-// pub mod schema;
+pub mod schema;
 pub mod models;
 
-fn main() {
+use models::*;
 
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    use schema::todos::dsl::*;
+    let connection = establish_connection();
+    let results = todos
+        .limit(5)
+        .load::<Todo>(&connection)?;
+
+    for result in results {
+
+    }
+    
+    Ok(())
 }
 
 pub fn establish_connection() -> PgConnection {
