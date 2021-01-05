@@ -1,9 +1,9 @@
-use diesel::pg::data_types::PgTimestamp;
+use chrono::NaiveDateTime;
 
 #[derive(Queryable)]
 pub struct Todo {
     pub id: i32,
     pub task: String,
     pub complete: bool,
-    pub published_at: PgTimestamp,
+    pub created_at: NaiveDateTime
 }

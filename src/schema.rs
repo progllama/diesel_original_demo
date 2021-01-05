@@ -3,6 +3,6 @@ table! {
         id -> Int4,
         task -> Text,
         complete -> Bool,
-        published_at -> Nullable<Timestamp>,
+        created_at -> Timestamp,
     }
 }
