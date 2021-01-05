@@ -15,12 +15,15 @@ use models::*;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     use schema::todos::dsl::*;
     let connection = establish_connection();
+    diesel::insert_into(todos)
+        .values((&task.eq("First task."), &complete.eq(false)))
+        .execute(&connection)?;
     let results = todos
         .limit(5)
         .load::<Todo>(&connection)?;
 
     for result in results {
-
+        println!("{:#?}", result);
     }
     
     Ok(())

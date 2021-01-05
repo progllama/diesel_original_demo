@@ -1,6 +1,6 @@
 use chrono::NaiveDateTime;
 
-#[derive(Queryable)]
+#[derive(Queryable, Debug)]
 pub struct Todo {
     pub id: i32,
     pub task: String,
