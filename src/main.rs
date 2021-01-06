@@ -18,6 +18,8 @@ type DbPool = r2d2::Pool<ConnectionManager<PgConnection>>;
 
 #[actix_web::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+
+
     use schema::todos::dsl::*;
     let connection = establish_connection();
     
