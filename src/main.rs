@@ -1,9 +1,11 @@
 #[macro_use]
 extern crate diesel;
+extern crate actix_web;
 extern crate dotenv;
 
 use diesel::prelude::*;
 use diesel::pg::PgConnection;
+use diesel::r2d2::{self, ConnectionManager};
 use dotenv::dotenv;
 use std::env;
 
@@ -12,9 +14,13 @@ pub mod models;
 
 use models::*;
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+type DbPool = r2d2::Pool<ConnectionManager<PgConnection>>;
+
+#[actix_web::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     use schema::todos::dsl::*;
     let connection = establish_connection();
+    
     diesel::insert_into(todos)
         .values((&task.eq("First task."), &complete.eq(false)))
         .execute(&connection)?;
