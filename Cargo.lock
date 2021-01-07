@@ -527,6 +527,7 @@ dependencies = [
  "chrono",
  "diesel",
  "dotenv",
+ "lazy_static",
  "r2d2",
 ]
 
