@@ -8,53 +8,49 @@ use diesel::pg::PgConnection;
 use diesel::r2d2::{self, ConnectionManager};
 use dotenv::dotenv;
 use lazy_static::lazy_static;
-use std::env;
+
+use actix_web::{
+    HttpServer,
+    App,
+    middleware,
+    get,
+    HttpResponse,
+    Result as AWResult,
+};
+use actix_web::http::{
+    StatusCode,
+};
 
 pub mod schema;
 pub mod models;
-
-use models::*;
 
 type DbPool = r2d2::Pool<ConnectionManager<PgConnection>>;
 
 #[actix_web::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    std::env::set_var("RUST_LOG", "actix_web=info");
+    env_logger::init();
 
+    // server codes.
+    HttpServer::new(|| {
+        App::new()
+            .wrap(middleware::Logger::default())
+            .service(index)
+    })
+    .bind("127.0.0.1:8080")?
+    .run()
+    .await?;
 
-    {
-        use schema::todos::dsl::*;
-        let connection = establish_connection();
-        
-        diesel::insert_into(todos)
-            .values((&task.eq("UNK"), &complete.eq(false)))
-            .execute(&connection)?;
-        let results = todos
-            .limit(20)
-            .load::<Todo>(&connection)?;
-
-        for result in results {
-            println!("{:#?}", result);
-        }
-    }
-
-    let mut tsk = String::new();
-    std::io::stdin().read_line(&mut tsk);
-
-    // get_todo();
-
-    // update_todo();
-
-    // get_todo();
-
-    destroy_todo();
-    
     Ok(())
 }
 
 //---------------------------------------------------------
 // Http server function
 //---------------------------------------------------------
-
+#[get("/")]
+async fn index() -> AWResult<HttpResponse> {
+    Ok(HttpResponse::build(StatusCode::OK).body("Success."))
+}
 //---------------------------------------------------------
 
 //---------------------------------------------------------
@@ -65,25 +61,37 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 lazy_static! {
     static ref DBPOOL: DbPool = {
+        let mut loop_counter: u8 = 0;
         loop {
+            if loop_counter == 255 {
+                panic!("Can't build pool.");
+            } else {
+                loop_counter+=1;
+            }
+
             dotenv().ok();
 
-            let connspec = if let Ok(v) = std::env::var("DATABASE_URL") {
-                v
-            } else {
-                continue;
+            let connspec = match std::env::var("DATABASE_URL") {
+                Ok(url) => url, 
+                Err(e) => {println!("{:?}", e); continue},
             };
+
             let manager = ConnectionManager::<PgConnection>::new(connspec);
             let pool = r2d2::Pool::builder()
+                .connection_timeout(std::time::Duration::from_millis(500))
                 .build(manager);
-            if let Ok(p) = pool {
-                break p;
+            match pool {
+                Ok(p) => break p,
+                Err(e) => println!("{:?}", e),
             }
         }
     };
 }
 
-pub fn establish_connection() -> Result<impl Connection, Box<dyn std::error::Error>> {
+use diesel::r2d2::{PooledConnection};
+pub fn establish_connection() -> 
+        PooledConnection<ConnectionManager<PgConnection>> {
+    DBPOOL.clone().get().unwrap()
 }
 
 // pub fn establish_connection() -> PgConnection {
@@ -97,7 +105,7 @@ pub fn establish_connection() -> Result<impl Connection, Box<dyn std::error::Err
 
 fn create_todo(t: &String) -> Result<(), Box<dyn std::error::Error>> {
     use schema::todos::dsl::*;
-    let connection = DBPOOL.clone().get().unwrap();
+    let connection = establish_connection();
     let inserted_row = diesel::insert_into(todos)
         .values((&task.eq(t), complete.eq(false)))
         .execute(&connection)?;
